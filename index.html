@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <title>DWT QR Scanner</title>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    #reader { width: 300px; margin-bottom: 20px; }
+    #result { border: 1px solid #ccc; padding: 15px; min-height: 100px; }
+    img { max-width: 100%; margin-top: 10px; }
+    button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>DWT QR Scanner</h1>
+  <div id="reader"></div>
+  <button id="start-btn">Pokreni kameru</button>
+  <button id="stop-btn" disabled>Zaustavi kameru</button>
+  <div id="result">Skeniraj QR kod da vidiš informacije o alatu.</div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxaitLZQZb1bRGeE6_OFfQoypbt3eXR7RUAb2rn1paxZUBnq8Jndfrl6hb6cZdMBM_f/exec';
+
+    const startBtn = document.getElementById('start-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const resultDiv = document.getElementById('result');
+    const readerDiv = document.getElementById('reader');
+
+    let html5QrCode;
+
+    function prikaziPoruku(msg, error = false) {
+      resultDiv.style.color = error ? 'red' : 'black';
+      resultDiv.innerHTML = msg;
+    }
+
+    function prikaziAlat(alat) {
+      resultDiv.style.color = 'black';
+      resultDiv.innerHTML = `
+        <h2>${alat.kratkiNaziv}</h2>
+        <p><strong>Šifra:</strong> ${alat.sifra}</p>
+        <p><strong>Naziv:</strong> ${alat.naziv}</p>
+        <p><a href="${alat.link}" target="_blank">Detalji proizvoda</a></p>
+        <img src="${alat.slika}" alt="Slika alata">
+      `;
+    }
+
+    function dohvatiAlat(sifra) {
+      prikaziPoruku('Dohvaćam podatke...');
+      fetch(`${API_URL}?sifra=${encodeURIComponent(sifra)}`)
+        .then(res => res.json())
+        .then(data => {
+          if(data.error) {
+            prikaziPoruku('Alat nije pronađen.', true);
+          } else {
+            prikaziAlat(data);
+          }
+        })
+        .catch(() => prikaziPoruku('Greška u dohvaćanju podataka.', true));
+    }
+
+    function startScanner() {
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 250 },
+        qrCodeMessage => {
+          html5QrCode.stop();
+          prikaziPoruku('QR kod skeniran: ' + qrCodeMessage);
+          dohvatiAlat(qrCodeMessage.trim());
+          stopBtn.disabled = true;
+          startBtn.disabled = false;
+        },
+        errorMessage => {
+          // greške kod skeniranja, može ostati prazno
+        }
+      ).then(() => {
+        prikaziPoruku('Kamera je pokrenuta, skeniraj QR kod...');
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+      }).catch(err => {
+        prikaziPoruku('Nemoguće pristupiti kameri: ' + err, true);
+      });
+    }
+
+    function stopScanner() {
+      if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+          prikaziPoruku('Kamera je zaustavljena.');
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        }).catch(err => {
+          prikaziPoruku('Greška pri zaustavljanju kamere: ' + err, true);
+        });
+      }
+    }
+
+    startBtn.addEventListener('click', startScanner);
+    stopBtn.addEventListener('click', stopScanner);
+  </script>
+</body>
+</html>
