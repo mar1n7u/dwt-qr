@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>DWT QR Scanner</title>
-  <script src="https://unpkg.com/html5-qrcode@2.3.7/minified/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
     #reader { width: 300px; margin-bottom: 20px; }
@@ -20,7 +20,7 @@
   <div id="result">Skeniraj QR kod da vidiš informacije o alatu.</div>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxaitLZQZb1bRGeE6_OFfQoypbt3eXR7RUAb2rn1paxZUBnq8Jndfrl6hb6cZdMBM_f/exec'; // ovdje stavi svoj API URL
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxaitLZQZb1bRGeE6_OFfQoypbt3eXR7RUAb2rn1paxZUBnq8Jndfrl6hb6cZdMBM_f/exec'; // OVDJE postavi svoj API url
 
     const startBtn = document.getElementById('start-btn');
     const stopBtn = document.getElementById('stop-btn');
@@ -34,13 +34,14 @@
     }
 
     function prikaziAlat(alat) {
+      const slika = alat.slika ? alat.slika : 'https://via.placeholder.com/400x400?text=Nema+slike';
       resultDiv.style.color = 'black';
       resultDiv.innerHTML = `
         <h2>${alat.kratkiNaziv}</h2>
         <p><strong>Šifra:</strong> ${alat.sifra}</p>
         <p><strong>Naziv:</strong> ${alat.naziv}</p>
         <p><a href="${alat.link}" target="_blank">Detalji proizvoda</a></p>
-        <img src="${alat.slika}" alt="Slika alata">
+        <img src="${slika}" alt="Slika alata">
       `;
     }
 
@@ -62,6 +63,7 @@
       if (!html5QrCode) {
         html5QrCode = new Html5Qrcode("reader");
       }
+
       html5QrCode.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
@@ -73,7 +75,7 @@
           startBtn.disabled = false;
         },
         errorMessage => {
-          // Greške u skeniranju (nije obavezno prikazivati)
+          // Ovdje možeš logirati greške ako želiš
         }
       ).then(() => {
         prikaziPoruku('Kamera je pokrenuta, skeniraj QR kod...');
