@@ -2,23 +2,74 @@
 <html lang="hr">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DWT QR Scanner</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; background-color: #000; color: #FFD700; }
-    #reader { width: 300px; margin-bottom: 20px; }
-    #result { border: 1px solid #FFD700; padding: 15px; min-height: 100px; background-color: #222; color: #FFD700; border-radius: 8px; }
-    button { padding: 10px 20px; margin: 5px; font-size: 16px; background-color: #FFD700; color: black; border: none; border-radius: 5px; cursor: pointer; }
-    button:disabled { background-color: #555; cursor: not-allowed; }
-    img { max-width: 100%; height: auto; margin-top: 10px; border-radius: 5px; }
-    h1 { text-align: center; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      background-color: #000;
+      color: #FFD700;
+    }
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    #reader {
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+      margin-bottom: 20px;
+    }
+    #result {
+      border: 1px solid #FFD700;
+      padding: 20px;
+      min-height: 120px;
+      background-color: #222;
+      color: #FFD700;
+      border-radius: 8px;
+      font-size: 18px;
+      text-align: center;
+    }
+    button {
+      padding: 15px 30px;
+      margin: 10px;
+      font-size: 18px;
+      background-color: #FFD700;
+      color: black;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 80%;
+      max-width: 300px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      margin-top: 15px;
+      border-radius: 5px;
+    }
+    a {
+      color: #FFD700;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <h1>DWT QR Scanner</h1>
   <div id="reader"></div>
-  <button id="start-btn">Pokreni kameru</button>
-  <button id="stop-btn" disabled>Zaustavi kameru</button>
+  <button id="start-btn">📷 Pokreni kameru</button>
+  <button id="stop-btn" disabled>🛑 Zaustavi kameru</button>
   <div id="result">Skeniraj QR kod da vidiš informacije o alatu.</div>
 
   <script>
@@ -42,7 +93,7 @@
         <h2>${alat.kratkiNaziv}</h2>
         <p><strong>Šifra:</strong> ${alat.sifra}</p>
         <p><strong>Naziv:</strong> ${alat.naziv}</p>
-        <p><a href="${alat.link}" target="_blank" style="color: #FFD700;">Detalji proizvoda</a></p>
+        <p><a href="${alat.link}" target="_blank">Detalji proizvoda</a></p>
         <img src="${slika}" alt="Slika alata">
       `;
     }
@@ -68,7 +119,7 @@
 
       html5QrCode.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
         qrCodeMessage => {
           html5QrCode.stop();
           prikaziPoruku('QR kod skeniran: ' + qrCodeMessage);
@@ -77,7 +128,7 @@
           startBtn.disabled = false;
         },
         errorMessage => {
-          // ovdje možeš logirati greške
+          // Ovdje možeš logirati greške ako želiš
         }
       ).then(() => {
         prikaziPoruku('Kamera je pokrenuta, skeniraj QR kod...');
