@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="hr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DWT QR Scanner</title>
+  <title>DWT QR Scanner s Košaricom</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     body {
@@ -13,18 +14,22 @@
       background-color: #000;
       color: #FFD700;
     }
+
     h1 {
       text-align: center;
       font-size: 28px;
       margin-bottom: 20px;
     }
+
     #reader {
       width: 100%;
       max-width: 400px;
       margin: auto;
       margin-bottom: 20px;
     }
-    #result {
+
+    #result,
+    #cart {
       border: 1px solid #FFD700;
       padding: 20px;
       min-height: 120px;
@@ -33,10 +38,12 @@
       border-radius: 8px;
       font-size: 18px;
       text-align: center;
+      margin-bottom: 20px;
     }
+
     button {
       padding: 15px 30px;
-      margin: 10px;
+      margin: 10px auto;
       font-size: 18px;
       background-color: #FFD700;
       color: black;
@@ -46,25 +53,27 @@
       width: 80%;
       max-width: 300px;
       display: block;
-      margin-left: auto;
-      margin-right: auto;
     }
+
     button:disabled {
       background-color: #555;
       cursor: not-allowed;
     }
+
     img {
       max-width: 100%;
       height: auto;
       margin-top: 15px;
       border-radius: 5px;
     }
+
     a {
       color: #FFD700;
       text-decoration: underline;
     }
   </style>
 </head>
+
 <body>
   <h1>DWT QR Scanner</h1>
   <div id="reader"></div>
@@ -72,14 +81,24 @@
   <button id="stop-btn" disabled>🛑 Zaustavi kameru</button>
   <div id="result">Skeniraj QR kod da vidiš informacije o alatu.</div>
 
+  <div id="cart">
+    <h2>🛒 Košarica</h2>
+    <ul id="cart-items"></ul>
+    <button id="clear-cart-btn">🗑️ Isprazni košaricu</button>
+  </div>
+
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbwf1GaOuzx_J4DGoSMQL7geRv8ic6Dl-lKblAmuU9Vdt7-Z7hjYfkAmqLdVNVzTOgud/exec';
 
     const startBtn = document.getElementById('start-btn');
     const stopBtn = document.getElementById('stop-btn');
     const resultDiv = document.getElementById('result');
+    const cartItems = document.getElementById('cart-items');
+    const clearCartBtn = document.getElementById('clear-cart-btn');
 
     let html5QrCode;
+    let trenutniAlat = null;
+    let kosarica = [];
 
     function prikaziPoruku(msg, error = false) {
       resultDiv.style.color = error ? 'red' : '#FFD700';
@@ -87,6 +106,8 @@
     }
 
     function prikaziAlat(alat) {
+      trenutniAlat = alat;
+
       const slika = alat.slika ? alat.slika : 'https://via.placeholder.com/400x400?text=Nema+slike';
       resultDiv.style.color = '#FFD700';
       resultDiv.innerHTML = `
@@ -95,7 +116,32 @@
         <p><strong>Naziv:</strong> ${alat.naziv}</p>
         <p><a href="${alat.link}" target="_blank">Detalji proizvoda</a></p>
         <img src="${slika}" alt="Slika alata">
+        <button id="add-to-cart-btn">➕ Dodaj u košaricu</button>
       `;
+
+      document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+        dodajUKosaricu(alat);
+      });
+    }
+
+    function dodajUKosaricu(alat) {
+      kosarica.push(alat);
+      prikaziKosaricu();
+    }
+
+    function prikaziKosaricu() {
+      if (kosarica.length === 0) {
+        cartItems.innerHTML = '<li>Košarica je prazna.</li>';
+        return;
+      }
+
+      cartItems.innerHTML = '';
+      kosarica.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.style.marginBottom = '10px';
+        li.innerHTML = `${item.kratkiNaziv} - <strong>${item.sifra}</strong>`;
+        cartItems.appendChild(li);
+      });
     }
 
     function dohvatiAlat(sifra) {
@@ -128,7 +174,7 @@
           startBtn.disabled = false;
         },
         errorMessage => {
-          // Ovdje možeš logirati greške ako želiš
+          // Logiranje grešaka (nije obavezno)
         }
       ).then(() => {
         prikaziPoruku('Kamera je pokrenuta, skeniraj QR kod...');
@@ -153,6 +199,13 @@
 
     startBtn.addEventListener('click', startScanner);
     stopBtn.addEventListener('click', stopScanner);
+    clearCartBtn.addEventListener('click', () => {
+      kosarica = [];
+      prikaziKosaricu();
+    });
+
+    prikaziKosaricu(); // Inicijalni prikaz košarice
   </script>
 </body>
+
 </html>
