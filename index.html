@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DWT QR Scanner s Košaricom</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
@@ -28,8 +28,7 @@
       margin-bottom: 20px;
     }
 
-    #result,
-    #cart {
+    #result {
       border: 1px solid #FFD700;
       padding: 20px;
       min-height: 120px;
@@ -71,6 +70,117 @@
       color: #FFD700;
       text-decoration: underline;
     }
+
+    /* KOŠARICA KAO FLOATING BUTTON */
+    #cart-btn {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background-color: #FFD700;
+      color: black;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #FFD700;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    #cart-count {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: red;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    #cart-popup {
+      position: fixed;
+      top: 80px;
+      right: 15px;
+      width: 320px;
+      max-height: 400px;
+      overflow-y: auto;
+      background-color: #222;
+      border: 2px solid #FFD700;
+      border-radius: 10px;
+      padding: 15px;
+      color: #FFD700;
+      font-size: 16px;
+      box-shadow: 0 0 15px #FFD700;
+      display: none;
+      z-index: 9999;
+    }
+
+    #cart-popup h2 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    #cart-items {
+      list-style: none;
+      padding-left: 0;
+      max-height: 280px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    #cart-items li {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+    }
+
+    #cart-items li button {
+      background: none;
+      border: none;
+      color: red;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 5px;
+      line-height: 1;
+    }
+
+    #cart-summary {
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    #clear-cart-btn {
+      background-color: #cc0000;
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 16px;
+      width: 100%;
+      cursor: pointer;
+      border: none;
+    }
+
+    #clear-cart-btn:hover {
+      background-color: #ff4444;
+    }
+
   </style>
 </head>
 
@@ -81,9 +191,15 @@
   <button id="stop-btn" disabled>🛑 Zaustavi kameru</button>
   <div id="result">Skeniraj QR kod da vidiš informacije o alatu.</div>
 
-  <div id="cart">
+  <button id="cart-btn" title="Košarica 🛒">
+    🛒
+    <div id="cart-count" style="display:none">0</div>
+  </button>
+
+  <div id="cart-popup">
     <h2>🛒 Košarica</h2>
     <ul id="cart-items"></ul>
+    <div id="cart-summary"></div>
     <button id="clear-cart-btn">🗑️ Isprazni košaricu</button>
   </div>
 
@@ -93,12 +209,25 @@
     const startBtn = document.getElementById('start-btn');
     const stopBtn = document.getElementById('stop-btn');
     const resultDiv = document.getElementById('result');
+
+    const cartBtn = document.getElementById('cart-btn');
+    const cartCount = document.getElementById('cart-count');
+    const cartPopup = document.getElementById('cart-popup');
     const cartItems = document.getElementById('cart-items');
+    const cartSummary = document.getElementById('cart-summary');
     const clearCartBtn = document.getElementById('clear-cart-btn');
 
     let html5QrCode;
     let trenutniAlat = null;
     let kosarica = [];
+
+    // Primjer: ako nema cijene u podacima, dodajmo random cijenu radi prikaza
+    // Pravi backend treba vratiti cijenu kao broj!
+    function dohvatiCijenu(alat) {
+      if (alat.cijena) return parseFloat(alat.cijena);
+      // Fake cijena za demo
+      return Math.floor(Math.random() * 1000) + 100;
+    }
 
     function prikaziPoruku(msg, error = false) {
       resultDiv.style.color = error ? 'red' : '#FFD700';
@@ -109,11 +238,14 @@
       trenutniAlat = alat;
 
       const slika = alat.slika ? alat.slika : 'https://via.placeholder.com/400x400?text=Nema+slike';
+      const cijena = dohvatiCijenu(alat).toFixed(2) + " kn";
+
       resultDiv.style.color = '#FFD700';
       resultDiv.innerHTML = `
         <h2>${alat.kratkiNaziv}</h2>
         <p><strong>Šifra:</strong> ${alat.sifra}</p>
         <p><strong>Naziv:</strong> ${alat.naziv}</p>
+        <p><strong>Cijena:</strong> ${cijena}</p>
         <p><a href="${alat.link}" target="_blank">Detalji proizvoda</a></p>
         <img src="${slika}" alt="Slika alata">
         <button id="add-to-cart-btn">➕ Dodaj u košaricu</button>
@@ -127,21 +259,38 @@
     function dodajUKosaricu(alat) {
       kosarica.push(alat);
       prikaziKosaricu();
+      alert(`Dodano u košaricu: ${alat.kratkiNaziv}`);
     }
 
     function prikaziKosaricu() {
       if (kosarica.length === 0) {
         cartItems.innerHTML = '<li>Košarica je prazna.</li>';
+        cartCount.style.display = 'none';
+        cartSummary.textContent = '';
         return;
       }
 
       cartItems.innerHTML = '';
+      let ukupnaCijena = 0;
       kosarica.forEach((item, index) => {
+        const cijena = dohvatiCijenu(item).toFixed(2);
+        ukupnaCijena += parseFloat(cijena);
         const li = document.createElement('li');
-        li.style.marginBottom = '10px';
-        li.innerHTML = `${item.kratkiNaziv} - <strong>${item.sifra}</strong>`;
+        li.innerHTML = `
+          <span>${item.kratkiNaziv} (${item.sifra}) - <strong>${cijena} kn</strong></span>
+          <button aria-label="Obriši artikl" data-index="${index}">×</button>
+        `;
         cartItems.appendChild(li);
       });
+
+      cartCount.style.display = 'flex';
+      cartCount.textContent = kosarica.length;
+      cartSummary.textContent = `Ukupno artikala: ${kosarica.length} | Ukupna cijena: ${ukupnaCijena.toFixed(2)} kn`;
+    }
+
+    function obrisiArtikl(index) {
+      kosarica.splice(index, 1);
+      prikaziKosaricu();
     }
 
     function dohvatiAlat(sifra) {
@@ -197,14 +346,34 @@
       }
     }
 
+    // Eventi
     startBtn.addEventListener('click', startScanner);
     stopBtn.addEventListener('click', stopScanner);
     clearCartBtn.addEventListener('click', () => {
-      kosarica = [];
-      prikaziKosaricu();
+      if (confirm('Želite li isprazniti košaricu?')) {
+        kosarica = [];
+        prikaziKosaricu();
+      }
     });
 
-    prikaziKosaricu(); // Inicijalni prikaz košarice
+    cartBtn.addEventListener('click', () => {
+      if (cartPopup.style.display === 'none' || cartPopup.style.display === '') {
+        cartPopup.style.display = 'block';
+      } else {
+        cartPopup.style.display = 'none';
+      }
+    });
+
+    cartItems.addEventListener('click', e => {
+      if (e.target.tagName === 'BUTTON') {
+        const index = parseInt(e.target.dataset.index);
+        if (!isNaN(index)) {
+          obrisiArtikl(index);
+        }
+      }
+    });
+
+    prikaziKosaricu(); // inicijalni prikaz
   </script>
 </body>
 
